@@ -16,14 +16,13 @@ using IHostingEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
 
 namespace WebApplication1.Controllers
 {
-
     [Authorize(Roles = "Admin")]
     public class ProductsController : Controller
     {
         private readonly ApplicationDbContext _context;
         private readonly IHostingEnvironment _WebHost;
         private readonly FirebaseAPI firebase;
-        
+
         public ProductsController(ApplicationDbContext context, IHostingEnvironment WebHost)
         {
             _context = context;
@@ -40,13 +39,12 @@ namespace WebApplication1.Controllers
                     (c.CategoryId == FilterCategory))
                     .Where(c => FilterBrand == null ||
                     (c.BrandId == FilterBrand))
-                    .Include(p=>p.Brand).Include(t => t.Category);
+                    .Include(p => p.Brand).Include(t => t.Category);
 
             ViewData["BrandId"] = new SelectList(_context.brands, "Id", "Name");
             ViewData["CategoryId"] = new SelectList(_context.categories, "Id", "Name");
 
             return View(await task.ToListAsync());
-            
         }
 
         [HttpGet("FilterAll")]
@@ -64,7 +62,6 @@ namespace WebApplication1.Controllers
             //ViewData["CategoryId"] = new SelectList(_context.categories, "Id", "Name");
 
             return View(await task.ToListAsync());
-
         }
 
         // GET: Products/Details/5
@@ -78,7 +75,7 @@ namespace WebApplication1.Controllers
             var product = await _context.products
                 .Include(p => p.Brand)
                 .Include(p => p.Category)
-                .Include(p=>p.PrdImages)
+                .Include(p => p.PrdImages)
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (product == null)
             {
@@ -96,30 +93,30 @@ namespace WebApplication1.Controllers
             return View();
         }
 
-       
-
-
         // POST: Products/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(List<IFormFile> imgfile,[Bind("Id,Name,DiscountPercent,Discription,IsFeatured,Quantity,UnitPrice,InsertingDate,BrandId,CategoryId")] Product product)
+        public async Task<IActionResult> Create(List<IFormFile> imgfile, [Bind("Id,Name,DiscountPercent,Discription,IsFeatured,Quantity,UnitPrice,InsertingDate,BrandId,CategoryId")] Product product)
         {
             if (ModelState.IsValid)
             {
                 #region Add New Product
+
                 _context.Add(product);
                 await _context.SaveChangesAsync();
-                #endregion
+
+                #endregion Add New Product
+
                 // Upload Image on Server
                 if (imgfile != null)
                 {
                     foreach (var item in imgfile)
                     {
-                        
                         #region Check Image File Name
-                        var ImageURL = await firebase.UploadFileonFirebase(item,"PrdImages");
+
+                        var ImageURL = await firebase.UploadFileonFirebase(item, "PrdImages");
                         if (ImageURL.ToString().Contains("https"))
                         {
                             var prdImage = new PrdImage()
@@ -130,18 +127,19 @@ namespace WebApplication1.Controllers
                             _context.prdImages.Add(prdImage);
                             await _context.SaveChangesAsync();
                         }
-                        #endregion
+
+                        #endregion Check Image File Name
                     }
                 }
-
-
 
                 #region Upload One File
 
                 #region Check Image File Name
+
                 //var saveImage = Path.Combine(_WebHost.WebRootPath, "PrdImages", imgfile.FileName);
-                //string imageExtension = Path.GetExtension(imgfile.FileName); 
-                #endregion
+                //string imageExtension = Path.GetExtension(imgfile.FileName);
+
+                #endregion Check Image File Name
 
                 //if (imageExtension == ".jpg" || imageExtension == ".png" || imageExtension == ".tiff")
                 //{
@@ -171,8 +169,9 @@ namespace WebApplication1.Controllers
                 //{
                 //    ViewData["message"] = "The Selected File " + imgfile.FileName + " not match .jpg | .png | .tiff";
 
-                //} 
-                #endregion
+                //}
+
+                #endregion Upload One File
 
                 return RedirectToAction(nameof(Index));
             }
@@ -182,40 +181,35 @@ namespace WebApplication1.Controllers
         }
 
         #region Get File Name
+
         private string UploadImage(IFormFile imgfile)
         {
             string fileName = null;
             if (imgfile != null)
             {
                 #region Check Image File Name
+
                 string UploadDir = Path.Combine(_WebHost.WebRootPath, "PrdImages");
-                fileName =Guid.NewGuid().ToString() + " - "+imgfile.FileName;
-                string FilePath= Path.Combine(UploadDir, fileName);
+                fileName = Guid.NewGuid().ToString() + " - " + imgfile.FileName;
+                string FilePath = Path.Combine(UploadDir, fileName);
                 string imageExtension = Path.GetExtension(imgfile.FileName);
-                #endregion
-                if (imageExtension == ".jpg" || imageExtension == ".png" || imageExtension == ".tiff")
+
+                #endregion Check Image File Name
+
+                #region Upload Image on Server Root and Save URL in DBs
+
+                using (var uploadimg = new FileStream(FilePath, FileMode.Create))
                 {
-
-                    #region Upload Image on Server Root and Save URL in DBs
-                    using (var uploadimg = new FileStream(FilePath, FileMode.Create))
-                    {
-                        imgfile.CopyTo(uploadimg);
-                        ViewData["message"] = "The Selected File " + imgfile.FileName + " is Uploaded Successfully";
-                    }
-                    #endregion
-
-                }
-                else
-                {
-                    ViewData["message"] = "The Selected File " + imgfile.FileName + " not match .jpg | .png | .tiff";
-
+                    imgfile.CopyTo(uploadimg);
+                    ViewData["message"] = "The Selected File " + imgfile.FileName + " is Uploaded Successfully";
                 }
 
+                #endregion Upload Image on Server Root and Save URL in DBs
             }
             return fileName;
+        }
 
-        } 
-        #endregion
+        #endregion Get File Name
 
         // GET: Products/Edit/5
         public async Task<IActionResult> Edit(long? id)
@@ -240,7 +234,7 @@ namespace WebApplication1.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(List<IFormFile> imgfile,long id, [Bind("Id,Name,DiscountPercent,Discription,IsFeatured,Quantity,UnitPrice,InsertingDate,BrandId,CategoryId")] Product product)
+        public async Task<IActionResult> Edit(List<IFormFile> imgfile, long id, [Bind("Id,Name,DiscountPercent,Discription,IsFeatured,Quantity,UnitPrice,InsertingDate,BrandId,CategoryId")] Product product)
         {
             if (id != product.Id)
             {
@@ -252,20 +246,21 @@ namespace WebApplication1.Controllers
                 try
                 {
                     // Upload Image on Server
-                         var prdImages = _context.prdImages.Where(p=>p.ProductId==id).ToList();
-                         if (prdImages != null)
-                         {
-                            foreach (var item in prdImages)
-                            {
-                                    _context.prdImages.Remove(item);
-                            }
-                         }
-                            
+                    var prdImages = _context.prdImages.Where(p => p.ProductId == id).ToList();
+                    if (prdImages != null)
+                    {
+                        foreach (var item in prdImages)
+                        {
+                            _context.prdImages.Remove(item);
+                        }
+                    }
+
                     if (imgfile != null)
                     {
                         foreach (var item in imgfile)
                         {
                             #region Check Image File Name
+
                             var ImageURL = await firebase.UploadFileonFirebase(item, "PrdImages");
                             if (ImageURL.ToString().Contains("https"))
                             {
@@ -277,7 +272,8 @@ namespace WebApplication1.Controllers
                                 _context.prdImages.Add(prdImage);
                                 await _context.SaveChangesAsync();
                             }
-                            #endregion
+
+                            #endregion Check Image File Name
                         }
                     }
 

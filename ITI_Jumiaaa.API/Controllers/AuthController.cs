@@ -73,10 +73,10 @@ namespace ITI_Jumiaaa.API.Controllers
         }
 
         [HttpPost]
-        [Route("/changepassword")]
-        public async Task<IActionResult> ChangePassword([FromForm] string currentPassword, [FromForm] string newPassword, [FromForm] string confirmPassword)
+        [Route("/changepassword/{id}")]
+        public async Task<IActionResult> ChangePassword(string id, [FromForm] string currentPassword, [FromForm] string newPassword, [FromForm] string confirmPassword)
         {
-            string userId = "0a841527-1165-460b-b012-c6842abf7bcf";
+            string userId = id;
 
             var user = await userManager.FindByIdAsync(userId);
             bool passwordMatch = await userManager.CheckPasswordAsync(user, currentPassword);
